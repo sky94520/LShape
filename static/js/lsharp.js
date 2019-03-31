@@ -693,9 +693,21 @@ ScriptImg.analysis = function (value) {
         case 'Img.add':
             ScriptImg.addImg(value, start, end);
             break;
+        case 'Img.transition':
+            ScriptImg.transition(value, start, end);
+            break;
     }
 };
 
+/**
+ * 显示已经加载的图片
+ * 用法 Img.add(-,backimg01,backdata,0,0,100,100,1)
+ * 分别是 显示层名称 精灵名称 精灵数据 x y width height alpha
+ * 后面三个可选
+ * @param value
+ * @param start
+ * @param end
+ */
 ScriptImg.addImg = function (value, start, end) {
     let script = LGlobal.script;
     let layer;
@@ -745,4 +757,43 @@ ScriptImg.addImg = function (value, start, end) {
 
     //继续解析
     script.analysis();
+};
+
+/**
+ * 对图片进行缓动变换
+ * Img.transition(backimg01,{x:300},1,Strong.easeOut,type);
+ * LBitmap对象名称 操作内容 变换所需的时间 缓动种类 是否立即执行下一行脚本
+ * 如果不设置，则缓动结束后才开始执行下一行脚本
+ * @param value
+ * @param start
+ * @param end
+ */
+ScriptImg.transition = function (value, start, end) {
+    let script = LGlobal.script;
+    //获取所有参数
+    let name_list = ['name', 'obj', 'duration', 'ease', 'runNow'];
+    let params = parseParams(name_list, value.substring(start + 1, end));
+    if (params == null){
+        console.log(text + ' not have enough parameters');
+        return ;
+    }
+
+    //将json对象还原
+    let toObj = eval('(' + params['obj'] + ')');
+    //变换类型
+    let eases = params['ease'].split('.');
+    //是否立即执行
+    let runNow = (params['runNow'] == '1');
+
+    //是否立即执行下一行脚本
+    if (!runNow){
+        toObj['onComplete'] = function () {
+            script.analysis();
+        };
+    }
+    LTweenLite.to(script.scriptArray.imgList[params['name']]
+        , params['duration'], toObj);
+
+    if (runNow)
+        script.analysis();
 };

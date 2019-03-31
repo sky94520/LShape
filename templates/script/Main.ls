@@ -26,5 +26,9 @@ Call.test(继位，你好);
 
 //读取图片数据
 Load.img(backdata,lufy_legend.jpg);
-//显示图片
-Img.add(-,backimg01,backdata,100,300,100,100,1);
+//显示图片2
+Img.add(-,backimg02,backdata,50,50,50,50,1);
+Img.transition(backimg02,{y:200},1,Strong.easeOut,1);
+Img.transition(backimg02,{scaleX:1},1,Strong.easeOut,1);
+
+Img.add(-,backimg03,backdata,50,50,50,50,0.5);
