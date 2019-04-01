@@ -124,6 +124,9 @@ LScript.prototype = {
           case 'Button':
               ScriptButton.analysis(lineValue);
               break;
+          case 'Wait':
+              ScriptWait.analysis(lineValue);
+              break;
           default:
               if (lineValue.indexOf('if') >= 0){
                   ScriptIF.getIF(lineValue);
@@ -1252,3 +1255,64 @@ ScriptButton.mouseevent = function (value, start, end, e) {
 
     script.analysis();
 };
+
+var ScriptWait = function () {};
+
+ScriptWait.analysis = function (value) {
+    let start = value.indexOf('(');
+    let end = value.indexOf(')');
+
+    switch (value.substr(0, start)) {
+        case 'Wait.click':
+            ScriptWait.waitClick();
+            break;
+        case 'Wait.ctrl':{
+            if (int(value.substring(start + 1, end)) > 0)
+                LGlobal.script.lineList.unshift('Wait.ctrl()');
+        }break;
+        case 'Wait.play':
+            LGlobal.script.analysis();
+            break;
+        case 'Wait.time':{
+            ScriptWait.timeId = setTimeout(function () {
+                ScriptWait.timeId = null;
+                LGlobal.script.analysis();
+            }, 1000);
+        }break;
+        case 'Wait.clickOver':{
+            LGlobal.script.scriptLayer.removeEventListener(LMouseEvent.MOUSE_UP, ScriptWait.clickEvent);
+            LGlobal.script.analysis();
+        }break;
+        case 'Wait.timeOver':
+            ScriptWait.timeOver();
+            break;
+        case 'Wait.over':{
+            LGlobal.script.scriptLayer.removeEventListener(LMouseEvent.MOUSE_UP, ScriptWait.clickEvent);
+            ScriptWait.timeOver();
+        }break;
+        default:
+            LGlobal.script.analysis();
+    }
+};
+
+ScriptWait.timeOver = function () {
+    if (ScriptWait.timeId){
+        clearTimeout(ScriptWait.timeId);
+        ScriptWait.timeId = null;
+    }
+    LGlobal.script.analysis();
+};
+
+ScriptWait.waitClick = function () {
+    let layer = LGlobal.script.scriptLayer;
+    //添加一个鼠标点击事件，当鼠标点击屏幕的时候，调用clickEvent函数
+    layer.addEventListener(LMouseEvent.MOUSE_UP, ScriptWait.clickEvent);
+};
+
+ScriptWait.clickEvent = function (event) {
+    console.log('click');
+    let layer = LGlobal.script.scriptLayer;
+    layer.removeEventListener(LMouseEvent.MOUSE_UP, ScriptWait.clickEvent);
+    LGlobal.script.analysis();
+};
+
