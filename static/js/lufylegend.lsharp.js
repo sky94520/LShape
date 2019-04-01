@@ -293,8 +293,17 @@ ScriptText.analysis = function (value){
 		case "Text.labelChange":
 			ScriptText.labelChange(value,start,end);
 			break;
-                case "Text.remove":
-                        ScriptText.removeText(value,start,end);
+		case "Text.remove":
+            ScriptText.removeText(value,start,end);
+			break;
+		case "Text.wind":
+			ScriptText.wind(value, start, end);
+			break;
+		case "Text.windChange":
+			ScriptText.windChange(value, start, end);
+			break;
+		case "Text.windOver":
+			ScriptText.windOver(value, start, end);
 			break;
 		default:
 			LGlobal.script.analysis();
@@ -369,6 +378,127 @@ ScriptText.labelChange = function (value,start,end){
 	script.scriptArray.textList[nameStr] = textList;
 	script.analysis();
 };
+
+ScriptText.windRun = function () {
+	if (ScriptText.windIndex >= ScriptText.windList.length){
+		LGlobal.script.analysis();
+		return ;
+	}
+	//将临时数组windList中的文字对象逐个取出来
+	let label = ScriptText.windList[ScriptText.windIndex++];
+	label.visible = true;
+	//利用LTextField对象的wind函数实现打字机效果的显示，显示结束后回调windRun函数本身
+	label.wind(ScriptText.windRun);
+};
+
+ScriptText.wind = function (value, start, end) {
+	let script = LGlobal.script;
+	//获取参数
+	let lArr = value.substring(start + 1, end).split(',');
+	let layer, label;
+	//显示层名称
+	let layerStr = lArr[0];
+	//文字对象名称
+	let nameStr = lArr[1];
+	//文字对象显示内容
+	let textStr = lArr[2];
+	//获取显示层
+	layer = script.scriptArray.layerList[layerStr];
+
+	//当文字显示的内容有包含回车符的话，使用多个LTextField对象来完成换行
+	let textArr = textStr.split('\\n');
+	let textList = [];
+
+	//创建文本
+	for (let i = 0; i < textArr.length; i++){
+		label = new LTextField();
+		label.size = lArr[6];
+		label.width = parseInt(lArr[5]);
+		label.setWordWrap(true, label.size * 1.2);
+		label.color = lArr[8];
+		label.text = textArr[i];
+		label.x = parseInt(lArr[3]);
+		label.y = parseInt(lArr[4]) + (label.size * 1.2) * i;
+		label.name = nameStr;
+		label.visible = false;
+
+		layer.addChild(label);
+		textList.push(label);
+	}
+
+	//保存文字对象组
+	script.scriptArray.textList[nameStr] = textList;
+	//将文字对象组存入临时数组
+	ScriptText.windList = textList;
+	ScriptText.windIndex = 0;
+	ScriptText.windRun();
+};
+
+ScriptText.windChange = function (value, start, end) {
+	let script = LGlobal.script;
+	//获取参数
+	let lArr = value.substring(start + 1, end).split(',');
+	//文字对象名称
+	let nameStr = lArr[0];
+	//文字对象显示内容
+	let textStr = lArr[1];
+	let color, size;
+	//获取原文字对象的属性
+	let textList = script.scriptArray.textList[nameStr];
+	let x = textList[0].x;
+	let y = textList[0].y;
+	let layer = textList[0].parent;
+
+	//将原文字全部删除
+	for (let i = 0; i < textList.length; i++){
+		let label = textList[i];
+		color = label.color;
+		size = label.size;
+		label.parent.removeChild(label);
+	}
+	textList = [];
+	let textArr = textStr.split('\\n');
+
+	for (let i = 0; i < textArr.length; i++){
+		let label = new LTextField();
+		label.size = lArr.length > 2? lArr[2]: size;
+		label.color = lArr.length > 3? lArr[3]: color;
+		label.text = textArr[i];
+		label.x = x;
+		label.y = y + (label.getHeight() * 1.2) * i;
+		label.name = nameStr;
+		label.visible = false;
+
+		layer.addChild(label);
+		textList.push(label);
+	}
+	//保存文字对象组
+	script.scriptArray.textList[nameStr] = textList;
+
+	ScriptText.windList = textList;
+	ScriptText.windIndex = 0;
+	ScriptText.windRun();
+};
+
+ScriptText.windOver = function (value, start, end) {
+	let lArr = value.substring(start + 1, end).split(',');
+	let nameStr = lArr[0];
+	let script = LGlobal.script;
+
+	let textList = script.scriptArray.textList[nameStr];
+	if (textList == null){
+		script.analysis();
+		return;
+	}
+	//停止所有的打字机效果
+	for (let i = 0; i < textList.length; i++){
+		label = textList[i];
+		label.wind_flag = false;
+		label.text = label.wind_text;
+	}
+	script.analysis();
+};
+
 /*
 * ScriptVarlable.js
 **/
@@ -950,8 +1080,11 @@ ScriptWait.analysis = function (value){
 		case "Wait.click"://暂停，等待点击鼠标
 			ScriptWait.waitclick();
 			break;
-		case "Wait.ctrl"://暂停，等待运行脚本
-			 if(int(value.substring(start + 1,end)) > 0)LGlobal.script.lineList.unshift("Wait.ctrl()");
+		case "Wait.ctrl"://TODO:暂停，等待运行脚本
+			/*
+			 if(int(value.substring(start + 1,end)) > 0)
+			 	LGlobal.script.lineList.unshift("Wait.ctrl()");
+			 */
 			break;
 		case "Wait.play"://脚本继续运行
 			LGlobal.script.analysis();
@@ -1002,36 +1135,40 @@ ScriptWait.clickEvent = function (event){
 	LGlobal.script.scriptLayer.removeEventListener(LMouseEvent.MOUSE_UP,ScriptWait.clickEvent);
 	LGlobal.script.analysis();
 };
-/*
-* ScriptMark.js
-**/
-var ScriptMark = function (){};
-ScriptMark.analysis = function (value){
-	var start = value.indexOf("(");
-	var end = value.indexOf(")");
-	switch(value.substr(0,start)){
-		case "Mark.goto"://跳至标签位置
-			ScriptMark.goto(value,start,end);
+
+var ScriptMark = function () {};
+
+ScriptMark.analysis = function (value) {
+	let start = value.indexOf('(');
+	let end = value.indexOf(')');
+
+	switch (value.substr(0, start)) {
+		case 'Mark.goto'://跳至标签位置
+			ScriptMark.goto(value, start, end);
 			break;
 		default:
 			LGlobal.script.analysis();
 	}
 };
-ScriptMark.goto = function (value,start,end){
-	var mark = LMath.trim(value.substring(start+1,end));
-	//copyList是当前正在解析的脚本序列的副本，再复制一个脚本序列的副本
-	var copyArray = LGlobal.script.copyList.concat();
-	var foundStr;
-	while(copyArray.length){
-		//从复制的脚本序列中开始查找标签，没查找一行，则将其删除
+
+ScriptMark.goto = function (value, start, end) {
+	let mark = LMath.trim(value.substring(start + 1, end));
+	//copyList 是当前正在解析的脚本序列的副本，再复制一个脚本序列的副本
+	let copyArray = LGlobal.script.copyList.concat();
+	let foundStr;
+
+	while (copyArray.length){
+		//从复制的脚本序列中开始查找标签，每查找一行，则删除一行
 		foundStr = copyArray.shift();
-		if(foundStr.indexOf("Mark."+mark) >= 0){
-			//如果找到标签，则将当前正在解析的脚本序列替换为复制序列
+
+		if (foundStr.indexOf('Mark.' + mark) >= 0){
+			//找到该标签
 			LGlobal.script.lineList = copyArray;
 			LGlobal.script.analysis();
 			return;
 		}
 	}
-	//如果没有找到标签，则什么都不做，进行下一行脚本的解析
+
+	//未找到标签，则进行下一行脚本的解析
 	LGlobal.script.analysis();
 };
