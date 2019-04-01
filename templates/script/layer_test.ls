@@ -15,8 +15,11 @@ Img.add(layer03,backimg03,backdata,0,0,100,100,1);
 Layer.remove(layer01);
 
 //Img.add(layer03,backimg03,backdata,0,0,100,100,1);
-//绘制矩形
+//绘制直角矩形
 Layer.drawRect(layer03,100,0,100,100,#ff0000);
 Layer.drawRectLine(layer03,100,100,100,100,#ff0000,1);
 
+//绘制圆角矩形
+Layer.drawRoundRect(-,0,0,50,50,8,#ff0000);
+Layer.drawRoundRectLine(-,50,0,50,50,8,#ff0000,5);
 

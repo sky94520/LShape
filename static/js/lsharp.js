@@ -826,6 +826,12 @@ ScriptLayer.analysis = function (value) {
         case 'Layer.drawRectLine':
             ScriptLayer.drawRectLine(value, start, end);
             break;
+        case 'Layer.drawRoundRect':
+            ScriptLayer.drawRoundRect(value, start, end);
+            break;
+        case 'Layer.drawRoundRectLine':
+            ScriptLayer.drawRoundRectLine(value, start, end);
+            break;
         default:
     }
 };
@@ -977,6 +983,67 @@ ScriptLayer.drawRectLine = function (value, start, end) {
         parseInt(params['y']),
         parseInt(params['width']),
         parseInt(params['height']),
+    ]);
+
+    script.analysis();
+};
+
+/**
+ * 绘制圆角矩形
+ * Layer.drawRoundRect(layerName,x,y,width,height,color);
+ * @param value
+ * @param start
+ * @param end
+ */
+ScriptLayer.drawRoundRect = function (value, start, end) {
+    //获取所有参数
+    let name_list = ['layerName', 'x', 'y', 'width', 'height', 'radius', 'color'];
+    let params = parseParams(name_list, value.substring(start + 1, end));
+    if (params == null){
+        console.log('drawRectLine not have enough parameters');
+        return ;
+    }
+
+    let script = LGlobal.script;
+    let layer = script.scriptArray.layerList[params['layerName']];
+
+    //绘制矩形
+    layer.graphics.drawRoundRect(1, params['color'], [
+        parseInt(params['x']),
+        parseInt(params['y']),
+        parseInt(params['width']),
+        parseInt(params['height']),
+        parseInt(params['radius'])
+    ], true, params['color']);
+
+    script.analysis();
+};
+/**
+ * 绘制空心圆角矩形
+ * Layer.drawRoundRectLine(layerName,x,y,width,height,color,num);
+ * @param value
+ * @param start
+ * @param end
+ */
+ScriptLayer.drawRoundRectLine = function (value, start, end) {
+    //获取所有参数
+    let name_list = ['layerName', 'x', 'y', 'width', 'height', 'radius', 'color', 'num'];
+    let params = parseParams(name_list, value.substring(start + 1, end));
+    if (params == null){
+        console.log('drawRectLine not have enough parameters');
+        return ;
+    }
+
+    let script = LGlobal.script;
+    let layer = script.scriptArray.layerList[params['layerName']];
+
+    //绘制矩形
+    layer.graphics.drawRoundRect(params['num'], params['color'], [
+        parseInt(params['x']),
+        parseInt(params['y']),
+        parseInt(params['width']),
+        parseInt(params['height']),
+        parseInt(params['radius'])
     ]);
 
     script.analysis();
