@@ -15,5 +15,8 @@ Img.add(layer03,backimg03,backdata,0,0,100,100,1);
 Layer.remove(layer01);
 
 //Img.add(layer03,backimg03,backdata,0,0,100,100,1);
+//绘制矩形
+Layer.drawRect(layer03,100,0,100,100,#ff0000);
+Layer.drawRectLine(layer03,100,100,100,100,#ff0000,1);
 
 

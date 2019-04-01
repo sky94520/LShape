@@ -282,7 +282,7 @@ ScriptText.label = function (value, start, end) {
     let name_list = ['layer', 'name', 'text', 'x', 'y', 'font-size', 'color'];
     let params = parseParams(name_list, value.substring(start + 1, end));
     if (params == null){
-        console.log(text + ' not have enough parameters');
+        console.log('label not have enough parameters');
         return ;
     }
     //获取所有参数
@@ -322,7 +322,7 @@ ScriptText.labelChange = function (value, start, end) {
     let name_list = ['name', 'text', 'font-size', 'color'];
     let params = parseParams(name_list, value.substring(start + 1, end));
     if (params == null){
-        console.log(text + ' not have enough parameters');
+        console.log('labelChange not have enough parameters');
         return ;
     }
     //根据名称获取原先的label数组
@@ -413,7 +413,7 @@ ScriptVariable.setVariable = function (value, start, end) {
     let name_list = ['key', 'value'];
     let params = parseParams(name_list, value.substring(start + 1, end));
     if (params == null){
-        console.log(text + ' not have enough parameters');
+        console.log('setVariable not have enough parameters');
         return ;
     }
     //TODO:设置变量 出错!!
@@ -777,7 +777,7 @@ ScriptImg.transition = function (value, start, end) {
     let name_list = ['name', 'obj', 'duration', 'ease', 'runNow'];
     let params = parseParams(name_list, value.substring(start + 1, end));
     if (params == null){
-        console.log(text + ' not have enough parameters');
+        console.log('transition not have enough parameters');
         return ;
     }
 
@@ -820,6 +820,12 @@ ScriptLayer.analysis = function (value) {
         case 'Layer.clear':
             ScriptLayer.clearLayer(value, start, end);
             break;
+        case 'Layer.drawRect':
+            ScriptLayer.drawRect(value, start, end);
+            break;
+        case 'Layer.drawRectLine':
+            ScriptLayer.drawRectLine(value, start, end);
+            break;
         default:
     }
 };
@@ -836,7 +842,7 @@ ScriptLayer.setLayer = function (value, start, end) {
     let name_list = ['parent', 'name', 'x', 'y'];
     let params = parseParams(name_list, value.substring(start + 1, end));
     if (params == null){
-        console.log(text + ' not have enough parameters');
+        console.log('setLayer not have enough parameters');
         return ;
     }
 
@@ -912,6 +918,66 @@ ScriptLayer.removeLayer = function (value, start, end) {
     ScriptLayer.removeFromArray(layer);
     parent.removeChild(layer);
     script.scriptArray.layerList[nameStr] = null;
+
+    script.analysis();
+};
+
+/**
+ * 绘制实心矩形
+ * Layer.drawRect(layer02,0,0,100,100,#ff0000);
+ * @param value
+ * @param start
+ * @param end
+ */
+ScriptLayer.drawRect = function (value, start, end) {
+    //获取所有参数
+    let name_list = ['layerName', 'x', 'y', 'width', 'height', 'color'];
+    let params = parseParams(name_list, value.substring(start + 1, end));
+    if (params == null){
+        console.log('drawRect not have enough parameters');
+        return ;
+    }
+
+    let script = LGlobal.script;
+    let layer = script.scriptArray.layerList[params['layerName']];
+
+    //绘制矩形
+    layer.graphics.drawRect(1, params['color'], [
+        parseInt(params['x']),
+        parseInt(params['y']),
+        parseInt(params['width']),
+        parseInt(params['height'])
+    ], true, params['color']);
+
+    script.analysis();
+};
+
+/**
+ * 绘制空心矩形框
+ * Layer.drawRectLine(layerName,x,y,width,height,color,num);
+ * @param value
+ * @param start
+ * @param end
+ */
+ScriptLayer.drawRectLine = function (value, start, end) {
+    //获取所有参数
+    let name_list = ['layerName', 'x', 'y', 'width', 'height', 'color', 'num'];
+    let params = parseParams(name_list, value.substring(start + 1, end));
+    if (params == null){
+        console.log('drawRectLine not have enough parameters');
+        return ;
+    }
+
+    let script = LGlobal.script;
+    let layer = script.scriptArray.layerList[params['layerName']];
+
+    //绘制空心矩形
+    layer.graphics.drawRect(params['num'], params['color'], [
+        parseInt(params['x']),
+        parseInt(params['y']),
+        parseInt(params['width']),
+        parseInt(params['height']),
+    ]);
 
     script.analysis();
 };
