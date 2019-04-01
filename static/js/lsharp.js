@@ -35,6 +35,8 @@ function LScriptArray() {
     self.bitmapdataList = [];
     //保存LBitmap对象
     self.imgList = [];
+    //保存按钮对象
+    self.btnList = [];
 }
 
 function LScript(scriptLayer, value) {
@@ -118,6 +120,9 @@ LScript.prototype = {
               break;
           case 'Layer':
               ScriptLayer.analysis(lineValue);
+              break;
+          case 'Button':
+              ScriptButton.analysis(lineValue);
               break;
           default:
               if (lineValue.indexOf('if') >= 0){
@@ -1086,4 +1091,164 @@ ScriptLayer.transition = function (value, start, end) {
 
     if (runNow)
         script.analysis();
+};
+
+var ScriptButton = function () {};
+/**
+ * 对按钮进行解析
+ * @param value
+ */
+ScriptButton.analysis = function (value) {
+    let start = value.indexOf('(');
+    let end = value.indexOf(')');
+
+    switch (value.substr(0, start)) {
+        case 'Button.add':
+            ScriptButton.addButton(value, start, end);
+            break;
+        case 'Button.remove':
+            ScriptButton.removeButton(value, start, end);
+            break;
+        case 'Button.mousedown':
+            ScriptButton.mouseevent(value, start, end, LMouseEvent.MOUSE_DOWN);
+            break;
+        case 'Button.mouseup':
+            ScriptButton.mouseevent(value, start, end, LMouseEvent.MOUSE_UP);
+            break;
+        case 'Button.mousemove':
+            ScriptButton.mouseevent(value, start, end, LMouseEvent.MOUSE_MOVE);
+            break;
+        default:
+    }
+};
+
+/**
+ * 添加按钮
+ * Button.add(layer01,button01,null,50,50,ok_button_up,ok_button_over,null);
+ * 显示层名称 按钮名称 按钮上的文字 按钮坐标 按钮弹起时的bitmapData对象名称
+ * @param value
+ * @param start
+ * @param end
+ */
+ScriptButton.addButton = function (value, start, end) {
+    //获取所有参数
+    let name_list = ['layerName', 'btnName', 'text', 'x', 'y', 'dataUp', 'dataOver', 'color'];
+    let params = parseParams(name_list, value.substring(start + 1, end));
+    if (params == null){
+        console.log('addButton not have enough parameters');
+        return ;
+    }
+
+    let script = LGlobal.script;
+    let layerStr = params['layerName'];
+    let nameStr = params['btnName'];
+    let labelStr = params['text'];
+    let x = parseInt(params['x']);
+    let y = parseInt(params['y']);
+    //按钮弹起和按下的样式的bitmapData对象名称
+    let dataUp = params['dataUp'];
+    let dataOver = params['dataOver'];
+    let color = params['color'];
+
+    let upImg = script.scriptArray.bitmapdataList[dataUp];
+    let overImg = script.scriptArray.bitmapdataList[dataOver];
+    //按钮精灵
+    let upLayer = new LSprite();
+    upLayer.addChild(new LBitmap(upImg));
+
+    let overLayer = new LSprite();
+    overLayer.addChild(new LBitmap(overImg));
+
+    //如果设置了按钮文字，则在按钮上添加一个LTextField对象来显示文字
+    if (labelStr && labelStr != 'null'){
+        let upText = new LTextField();
+        upText.text = labelStr;
+        upText.size = upImg.height * 0.5;
+
+        upText.x = (upImg.width - upText.getWidth()) * 0.5;
+        upText.y = upImg.y = upImg.height * 0.2;
+        upLayer.addChild(upText);
+
+        let overText = new LTextField();
+        overText.text = labelStr;
+        overText.size = upImg.height * 0.5;
+
+        overText.x = (upImg.width - overText.getWidth()) * 0.5;
+        overText.y = upImg.y = upImg.height * 0.2;
+        upLayer.addChild(overText);
+        //按钮的文字颜色
+        upText.color = color;
+        overText.color = color;
+    }
+
+    let layer = script.scriptArray.layerList[layerStr];
+    //利用按钮的两个状态，新建一个LButton按钮对象
+    let btn = new LButton(upLayer, overLayer);
+    btn.x = x;
+    btn.y = y;
+    //保存按钮
+    script.scriptArray.btnList[nameStr] = btn;
+    btn.name = nameStr;
+    //将按钮添加到显示层
+    layer.addChild(btn);
+
+    script.analysis();
+};
+
+/*
+   删除按钮脚本
+   Button.remove(button01);
+ */
+ScriptButton.removeButton = function (value, start, end) {
+    //获取所有参数
+    let name_list = ['btnName'];
+    let params = parseParams(name_list, value.substring(start + 1, end));
+    if (params == null){
+        console.warn('removeButton not have enough parameters');
+        return ;
+    }
+    let script = LGlobal.script;
+    let nameStr = params['btnName'];
+
+    //获取按钮
+    let btn = script.scriptArray.btnList[nameStr];
+    if (btn == null){
+        script.scriptArray.btnList[nameStr] = null;
+        script.analysis();
+        return;
+    }
+
+    //移除按钮
+    btn.parent.removeChild(btn);
+    script.scriptArray.btnList[nameStr] = null;
+    script.analysis();
+};
+
+/*
+    按钮事件
+    Button.mousedown(button01,function_test01);
+ */
+ScriptButton.mouseevent = function (value, start, end, e) {
+    //获取所有参数
+    let name_list = ['btnName', 'funName'];
+    let params = parseParams(name_list, value.substring(start + 1, end));
+    if (params == null){
+        console.warn('mouseevent not have enough parameters');
+        return ;
+    }
+    let script = LGlobal.script;
+
+    let nameStr = params['btnName'];
+    let funStr = params['funName'];
+
+    //获取按钮
+    let btn = script.scriptArray.btnList[nameStr];
+    //添加匿名函数
+    let fun = function (event) {
+        ScriptFunction.analysis('Call.' + funStr + '();');
+    };
+    //为按钮添加事件
+    btn.addEventListener(e, fun);
+
+    script.analysis();
 };
