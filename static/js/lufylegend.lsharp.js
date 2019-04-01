@@ -205,6 +205,9 @@ ScriptImg.analysis = function (value,start,end){
 		case "Img.transition":
 			ScriptImg.transition(value,start,end);
 			break;
+		case "Img.changeData":
+			ScriptImg.changeData(value, start, end);
+			break;
 	}
 };
 ScriptImg.addImg = function (value,start,end){
@@ -278,6 +281,28 @@ ScriptImg.transition = function (value,start,end){
 	LTweenLite.to(script.scriptArray.imgList[nameStr],time,toObj);  
 	//如果runNow为1，则立即执行下一行脚本
 	if(runNow)script.analysis();
+};
+
+ScriptImg.changeData = function (value, start, end) {
+	let script = LGlobal.script;
+	let lArr = value.substring(start + 1, end).split(',');
+	let nameStr = lArr[0];
+	let dataStr = lArr[1];
+
+	let bitmapData = script.scriptArray.bitmapdataList[dataStr];
+	let width, height;
+
+	if (lArr.length > 2)
+		width = parseInt(lArr[2]);
+	if (lArr.length > 3)
+		height = parseInt(lArr[3]);
+
+	let bitmap = script.scriptArray.imgList[nameStr];
+	bitmap.bitmapData = bitmapData;
+	bitmap.width = width;
+	bitmap.height = height;
+
+	script.analysis();
 };
 /*
 * ScriptText.js
@@ -1081,19 +1106,18 @@ ScriptWait.analysis = function (value){
 			ScriptWait.waitclick();
 			break;
 		case "Wait.ctrl"://TODO:暂停，等待运行脚本
-			/*
-			 if(int(value.substring(start + 1,end)) > 0)
+			 if(parseInt(value.substring(start + 1,end)) > 0)
 			 	LGlobal.script.lineList.unshift("Wait.ctrl()");
-			 */
 			break;
 		case "Wait.play"://脚本继续运行
 			LGlobal.script.analysis();
 			break;
 		case "Wait.time"://脚本暂停一段时间
+			let duration = parseInt(value.substring(start + 1, end));
 			ScriptWait.timeId = setTimeout(function(){
 				ScriptWait.timeId = null;
 				LGlobal.script.analysis();
-			}, 1000);
+			}, duration);
 			break;
 		case "Wait.clickOver"://结束等待点击脚本（Wait.click）
 			LGlobal.script.scriptLayer.removeEventListener(LMouseEvent.MOUSE_UP,ScriptWait.clickEvent);
