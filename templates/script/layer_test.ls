@@ -19,6 +19,9 @@ Layer.remove(layer01);
 Layer.drawRect(layer03,100,0,100,100,#ff0000);
 Layer.drawRectLine(layer03,100,100,100,100,#ff0000,1);
 
+//动作
+Layer.transition(layer03,{x:50},1,Strong.easeOut,0);
+
 //绘制圆角矩形
 Layer.drawRoundRect(-,0,0,50,50,8,#ff0000);
 Layer.drawRoundRectLine(-,50,0,50,50,8,#ff0000,5);

@@ -832,6 +832,9 @@ ScriptLayer.analysis = function (value) {
         case 'Layer.drawRoundRectLine':
             ScriptLayer.drawRoundRectLine(value, start, end);
             break;
+        case 'Layer.transition':
+            ScriptLayer.transition(value, start, end);
+            break;
         default:
     }
 };
@@ -1047,4 +1050,40 @@ ScriptLayer.drawRoundRectLine = function (value, start, end) {
     ]);
 
     script.analysis();
+};
+
+/**
+ * 对显示层进行缓动变换
+ * Layer.transition(layerName,obj,duration,type,runNow);
+ * @param value
+ * @param start
+ * @param end
+ */
+ScriptLayer.transition = function (value, start, end) {
+    //获取所有参数
+    let name_list = ['layerName', 'obj', 'duration', 'type', 'runNow'];
+    let params = parseParams(name_list, value.substring(start + 1, end));
+    if (params == null){
+        console.log('drawRectLine not have enough parameters');
+        return ;
+    }
+    let script = LGlobal.script;
+    //将json对象还原
+    let toObj = eval('(' + params['obj'] + ')');
+    //缓动类型
+    let eases = params['type'].split('.');
+    let runNow = (params['runNow'] == '1');
+
+    //立即执行下一行代码
+    toObj['ease'] = LEasing[eases[0]][eases[1]];
+
+    if (!runNow){
+        toObj['onComplete'] = function () {
+            script.analysis();
+        };
+    }
+    LTweenLite.to(script.scriptArray.layerList[params['layerName']], params['duration'], toObj);
+
+    if (runNow)
+        script.analysis();
 };
