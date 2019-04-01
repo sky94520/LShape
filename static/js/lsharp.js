@@ -116,6 +116,9 @@ LScript.prototype = {
           case 'Img':
               ScriptImg.analysis(lineValue);
               break;
+          case 'Layer':
+              ScriptLayer.analysis(lineValue);
+              break;
           default:
               if (lineValue.indexOf('if') >= 0){
                   ScriptIF.getIF(lineValue);
@@ -796,4 +799,119 @@ ScriptImg.transition = function (value, start, end) {
 
     if (runNow)
         script.analysis();
+};
+
+/*
+  ScriptLayer 负责显示的层的一些操作，如创建层，删除层等
+ */
+var ScriptLayer = function () {};
+
+ScriptLayer.analysis = function (value) {
+    let start = value.indexOf('(');
+    let end = value.indexOf(')');
+    
+    switch (value.substr(0, start)) {
+        case 'Layer.add':
+            ScriptLayer.setLayer(value, start, end);
+            break;
+        case 'Layer.remove':
+            ScriptLayer.removeLayer(value, start, end);
+            break;
+        case 'Layer.clear':
+            ScriptLayer.clearLayer(value, start, end);
+            break;
+        default:
+    }
+};
+
+/**
+ * 添加显示层
+ * Layer.add(-,layer01,100,100);
+ * @param value
+ * @param start
+ * @param end
+ */
+ScriptLayer.setLayer = function (value, start, end) {
+    //获取所有参数
+    let name_list = ['parent', 'name', 'x', 'y'];
+    let params = parseParams(name_list, value.substring(start + 1, end));
+    if (params == null){
+        console.log(text + ' not have enough parameters');
+        return ;
+    }
+
+    let script = LGlobal.script;
+    let layer, parent;
+
+    //赋值
+    parent = script.scriptArray.layerList[params['parent']];
+    layer = new LSprite();
+    layer.x = parseInt(params['x']);
+    layer.y = parseInt(params['y']);
+    layer.name = params['name'];
+
+    parent.addChild(layer);
+    script.scriptArray.layerList[layer.name] = layer;
+
+    script.analysis();
+};
+
+/**
+ * 清空显示层，即将该显示层上的所有子类都移除
+ * @param obj
+ */
+ScriptLayer.removeFromArray = function (obj) {
+    if (obj.childList == null)
+        return;
+
+    let count = obj.childList.length;
+    for (let i = 0; i < count; i++){
+        let type = obj.childList[i].type;
+        if (type == 'LSprite')
+            ScriptLayer.removeFromArray(obj.childList[i]);
+        else if (type == 'LBitmap')
+            LGlobal.script.scriptArray.imgList[obj.childList[i].name] = null;
+        else if (type == 'LTextField')
+            LGlobal.script.scriptArray.textList[obj.childList[i].name] = null;
+    }
+};
+
+ScriptLayer.clearLayer = function (value, start, end) {
+    let nameStr = LMath.trim(value.substring(start + 1, end));
+    let script = LGlobal.script;
+    let layer = script.scriptArray.layerList[nameStr];
+    if (!layer){
+        script.analysis();
+        return;
+    }
+
+    ScriptLayer.removeFromArray(layer);
+    //移除所有事件
+    layer.die();
+    //移除所有子对象
+    layer.removeAllChild();
+    script.analysis();
+};
+
+/**
+ * 移除显示层，比清空显示层多的一步就是移除了自己
+ * @param value
+ * @param start
+ * @param end
+ */
+ScriptLayer.removeLayer = function (value, start, end) {
+    let nameStr = LMath.trim(value.substring(start + 1, end));
+    let script = LGlobal.script;
+    let layer = script.scriptArray.layerList[nameStr];
+    if (!layer){
+        script.analysis();
+        return;
+    }
+
+    let parent = layer.parent;
+    ScriptLayer.removeFromArray(layer);
+    parent.removeChild(layer);
+    script.scriptArray.layerList[nameStr] = null;
+
+    script.analysis();
 };
